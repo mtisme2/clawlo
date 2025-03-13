@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตู้คีบออนไลน์</title>
+    <style>
+        /* CSS สำหรับตกแต่งหน้าเว็บ */
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #camera-view {
+            width: 640px;
+            height: 480px;
+            background-color: #fff;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #controls {
+            margin-top: 20px;
+        }
+        #controls button {
+            padding: 12px 24px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #admin-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            z-index: 1000;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #password-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1001;
+        }
+        #admin-panel {
+            display: none;
+            margin: 20px auto;
+            width: 80%;
+            border: 1px solid #ddd;
+            padding: 20px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #timer, #status, #player-action, #win-message, #lose-message {
+            font-size: 18px;
+            margin-top: 10px;
+            color: #555;
+        }
+        #win-message {
+            color: green;
+            font-size: 20px;
+            display: none;
+            margin-top: 20px;
+        }
+        #lose-message {
+            color: red;
+            font-size: 20px;
+            display: none;
+            margin-top: 20px;
+        }
+        #admin-panel button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ตู้คีบออนไลน์</h1>
+
+    <button id="admin-button">แอดมิน</button>
+
+    <div id="password-modal">
+        <label for="password-input">รหัสผ่าน:</label>
+        <input type="password" id="password-input">
+        <button id="confirm-button">ยืนยัน</button>
+    </div>
+
+    <div id="camera-view">
+        <img src="camera_placeholder.jpg" alt="ภาพจากกล้อง">
+    </div>
+
+    <div id="controls">
+        <button id="left-button">ซ้าย</button>
+        <button id="right-button">ขวา</button>
+        <button id="down-button">ลง</button>
+    </div>
+
+    <div id="timer">เวลา: 20 วินาที</div>
+    <div id="status">สถานะ: Offline</div>
+    <div id="win-message">ยินดีด้วย! คุณได้รับ SUNSU x1</div>
+    <div id="lose-message">เสียใจด้วยครั้งหน้าลองใหม่!</div>
+
+    <div id="admin-panel">
+        <h2>แผงควบคุมแอดมิน</h2>
+        <div id="admin-camera-view">
+            <img src="admin_camera_placeholder.jpg" alt="ภาพจากกล้องแอดมิน">
+        </div>
+        <p id="player-action">การกระทำของผู้เล่น: -</p>
+        <button id="online-button">Online</button>
+        <button id="offline-button">Offline</button>
+        <button id="reset-button">รีเซ็ต</button>
+        <button id="win-button">ชนะ</button>
+        <button id="lose-button">แพ้</button>
+        <button id="logout-button">ออกจากระบบ</button>
+    </div>
+
+    <script>
+        const adminButton = document.getElementById('admin-button');
+        const passwordModal = document.getElementById('password-modal');
+        const confirmButton = document.getElementById('confirm-button');
+        const passwordInput = document.getElementById('password-input');
+        const leftButton = document.getElementById('left-button');
+        const rightButton = document.getElementById('right-button');
+        const downButton = document.getElementById('down-button');
+        const adminPanel = document.getElementById('admin-panel');
+        const onlineButton = document.getElementById('online-button');
+        const offlineButton = document.getElementById('offline-button');
+        const resetButton = document.getElementById('reset-button');
+        const winButton = document.getElementById('win-button');
+        const loseButton = document.getElementById('lose-button');
+        const logoutButton = document.getElementById('logout-button');
+        const timerDisplay = document.getElementById('timer');
+        const statusDisplay = document.getElementById('status');
+        const winMessage = document.getElementById('win-message');
+        const loseMessage = document.getElementById('lose-message');
+        const controls = document.getElementById('controls');
+        const playerActionDisplay = document.getElementById('player-action');
+
+        let timer;
+        let timeLeft = 20;
+        let gameActive = false;
+        let isOnline = false;
+        let gameStarted = false;
+
+        // Admin button logic
+        adminButton.addEventListener('click', () => {
+            passwordModal.style.display = 'block';
+        });
+
+        confirmButton.addEventListener('click', () => {
+            const password = passwordInput.value;
+            if (password === 'Admin123') {
+                passwordModal.style.display = 'none';
+                adminPanel.style.display = 'block';
+            } else {
+                alert('รหัสผ่านไม่ถูกต้อง');
+            }
+        });
+
+        // Controls button logic
+        controls.addEventListener('click', (event) => {
+            if (event.target.tagName === 'BUTTON') {
+                if (!gameStarted && isOnline) {
+                    startGame();
+                    gameStarted = true;
+                }
+                if (event.target.id === 'left-button') {
+                    playerActionDisplay.textContent = 'การกระทำของผู้เล่น: เลื่อนซ้าย';
+                } else if (event.target.id === 'right-button') {
+                    playerActionDisplay.textContent = 'การกระทำของผู้เล่น: เลื่อนขวา';
+                } else if (event.target.id === 'down-button') {
+                    playerActionDisplay.textContent = 'การกระทำของผู้เล่น: ลง';
+                }
+            }
+        });
+
+        function startGame() {
+            gameActive = true;
+            timeLeft = 20;
+            timerDisplay.textContent = `เวลา: ${timeLeft} วินาที`;
+            statusDisplay.textContent = 'สถานะ: Online';
+            timer = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timerDisplay.textContent = `เวลา: ${timeLeft} วินาที`;
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            winMessage.style.display = 'block';
+            setTimeout(() => {
+                winMessage.style.display = 'none';
+                statusDisplay.textContent = 'สถานะ: Offline';
+            }, 5000);
+        }
+
+        // Admin panel logic
+        onlineButton.addEventListener('click', () => {
+            isOnline = true;
+            statusDisplay.textContent = 'สถานะ: Online';
+        });
+
+        offlineButton.addEventListener('click', () => {
+            isOnline = false;
+            statusDisplay.textContent = 'สถานะ: Offline';
+        });
+
+        resetButton.addEventListener('click', () => {
+            if (gameActive) {
+                // หยุดตัวจับเวลา
+                clearInterval(timer);
+                gameActive = false;
+                timeLeft = 20; // รีเซ็ตเวลา
+                timerDisplay.textContent = `เวลา: ${timeLeft} วินาที`;
+                // รีเซ็ตข้อความการกระทำของผู้เล่น
+                playerActionDisplay.textContent = 'การกระทำของผู้เล่น: -';
+                // รีเซ็ตสถานะของเกม
+                statusDisplay.textContent = 'สถานะ: Offline';
+            }
+        });
+
+        winButton.addEventListener('click', () => {
+            gameActive = false;
+            winMessage.style.display = 'block';
+            setTimeout(() => {
+                winMessage.style.display = 'none';
+            }, 5000);
+        });
+
+        loseButton.addEventListener('click', () => {
+            gameActive = false;
+            loseMessage.style.display = 'block';
+            setTimeout(() => {
+                loseMessage.style.display = 'none';
+            }, 5000);
+        });
+
+        logoutButton.addEventListener('click', () => {
+            adminPanel.style.display = 'none';
+            statusDisplay.textContent = 'สถานะ: Offline';
+        });
+    </script>
+</body>
+</html>
